@@ -14,7 +14,7 @@ hadoop@vspark:~/food_reviews.csv$ cat part-00000 part-00001 part-00002 part-0000
 
 val df = spark.read.format("csv").option("header","true").option("quoteAll","true").load("food_reviews.csv")
 
-scala> df.printSchema()
+df.printSchema()
 root
  |-- Id: string (nullable = true)
  |-- ProductId: string (nullable = true)
@@ -27,7 +27,7 @@ root
  |-- Summary: string (nullable = true)
  |-- Text: string (nullable = true)
  
-scala> df.select("ProductId","UserId","Score").show
+df.select("ProductId","UserId","Score").show
 +----------+--------------+-----+
 | ProductId|        UserId|Score|
 +----------+--------------+-----+
@@ -71,25 +71,25 @@ import org.apache.spark.mllib.recommendation.ALS
 
 val model = ALS.train(ratings, 50, 10, 0.01)
 
-scala> model.userFeatures.count
+model.userFeatures.count
 res7: Long = 74258
 
-scala> model.productFeatures.count
+model.productFeatures.count
 res8: Long = 256058
 
-scala> val predictedRating = model.predict(789, 123)
+val predictedRating = model.predict(789, 123)
 predictedRating: Double = 1.193966441412471
 
-scala> val userId = 789
+val userId = 789
 userId: Int = 789
 
-scala> val K = 10
+val K = 10
 K: Int = 10
 
-scala> val topKRecs = model.recommendProducts(userId, K)
+val topKRecs = model.recommendProducts(userId, K)
 topKRecs: Array[org.apache.spark.mllib.recommendation.Rating] = Array(Rating(789,23125,4.999324347042822), Rating(789,99004,3.0894407967137876), Rating(789,82543,3.043873766230799), Rating(789,51682,3.0053426310787352), Rating(789,6819,2.9969758754351083), Rating(789,153935,2.990496374145687), Rating(789,254719,2.9044268775823396), Rating(789,8642,2.8687477882195993), Rating(789,126770,2.860425654157538), Rating(789,57126,2.8570265071707404))
 
-scala> println(topKRecs.mkString("\n"))
+println(topKRecs.mkString("\n"))
 Rating(789,23125,4.999324347042822)
 Rating(789,99004,3.0894407967137876)
 Rating(789,82543,3.043873766230799)
