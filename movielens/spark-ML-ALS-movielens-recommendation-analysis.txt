@@ -1,0 +1,83 @@
+import org.apache.spark.sql.types._
+
+val df = spark.read.option("inferSchema","true").option("sep","\t").csv("hdfs://hdpmst:9000/data/u.data").
+toDF("user","item","rating","timestamp").withColumn("rating", 'rating.cast(DoubleType))
+
+df.printSchema
+
+df.cache
+df.count
+
+df.groupBy("user","item").count().where("count > 1").show
+
+spark.conf.set("spark.sql.shuffle.partitions",10)
+
+import org.apache.spark.ml.recommendation.ALS
+
+val als = new ALS().setUserCol("user").setItemCol("item").setRatingCol("rating")
+
+import org.apache.spark.ml.tuning.{ParamGridBuilder, CrossValidator}
+
+val paramGrid = new ParamGridBuilder().
+addGrid(als.rank, Array(3, 5, 10)).
+addGrid(als.maxIter, Array(5,10,20)).build()
+
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+
+val eval = new RegressionEvaluator().setLabelCol("rating").setPredictionCol("prediction")
+
+val cv = new CrossValidator().
+setEstimator(als).
+setEvaluator(eval).
+setEstimatorParamMaps(paramGrid).
+setNumFolds(3)
+
+val model = cv.fit(df)
+
+import org.apache.spark.ml.recommendation.ALSModel
+val bestmodel = model.bestModel.asInstanceOf[ALSModel]
+ 
+val df1 = spark.read.option("inferSchema","true").option("sep","\t").csv("hdfs://hdpmst:9000/data/u1.test").
+    toDF("user","item","rating","timestamp").withColumn("rating", 'rating.cast(DoubleType))
+
+df1.printSchema
+root
+ |-- user: integer (nullable = true)
+ |-- item: integer (nullable = true)
+ |-- rating: double (nullable = true)
+ |-- timestamp: integer (nullable = true)
+
+df.printSchema
+root
+ |-- user: integer (nullable = true)
+ |-- item: integer (nullable = true)
+ |-- rating: double (nullable = true)
+ |-- timestamp: integer (nullable = true)
+
+
+bestmodel.transform(df1).show
++----+----+------+---------+----------+                                         
+|user|item|rating|timestamp|prediction|
++----+----+------+---------+----------+
+|  90|  22|   4.0|891384357|  4.303733|
+|  92|  22|   3.0|875653121|  3.761334|
+| 123|  22|   4.0|879809943|  3.164426|
+| 144|  22|   5.0|888105439| 3.9403703|
+| 153|  22|   2.0|881371140| 2.8857393|
+| 307|  22|   3.0|879205470| 4.0073013|
+| 326|  22|   4.0|879874989| 3.6876047|
+| 330|  22|   5.0|876545532| 5.0449615|
+| 178|  22|   5.0|882826187|  4.343415|
+| 271|  22|   5.0|885848518| 3.8299441|
+| 278|  22|   5.0|891295360|   4.33217|
+| 301|  22|   4.0|882075859| 4.1191616|
+| 370|  22|   4.0|879434832|  3.633439|
+|  10|  22|   5.0|877888812| 4.2751684|
+| 115|  22|   3.0|881171273|  3.485371|
+| 184|  22|   3.0|889908985|  3.696402|
+| 225|  22|   5.0|879540678|   4.51797|
+| 232|  22|   3.0|888549988| 3.6994529|
+| 313|  22|   3.0|891014870| 3.8787236|
+| 328|  22|   5.0|885045805| 3.9313588|
++----+----+------+---------+----------+
+only showing top 20 rows

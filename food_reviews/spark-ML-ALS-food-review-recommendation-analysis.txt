@@ -1,0 +1,322 @@
+val rdd = sc.textFile("hdfs://hdpmst:9000/data/Reviews.csv")
+
+rdd.getNumPartitions
+res3: Int = 3
+
+rdd.take(5)
+res4: Array[String] = Array(Id,ProductId,UserId,ProfileName,HelpfulnessNumerator,HelpfulnessDenominator,Score,Time,Summary,Text, 1,B001E4KFG0,A3SGXH7AUHU8GW,delmartian,1,1,5,1303862400,Good Quality Dog Food,I have bought several of the Vitality canned dog food products and have found them all to be of good quality. The product looks more like a stew than a processed meat and it smells better. My Labrador is finicky and she appreciates this product better than  most., 2,B00813GRG4,A1D87F6ZCVE5NK,dll pa,0,0,1,1346976000,Not as Advertised,"Product arrived labeled as Jumbo Salted Peanuts...the peanuts were actually small sized unsalted. Not sure if this was an error or if the vendor intended to represent the product as ""Jumbo"".", 3,B000LQOCH0,ABXLMWJIXXAIN,"Natalia Corres ""Natalia Corres...
+
+val rdd1 = rdd.map( x => x.replaceAll("\"\"",""))
+
+rdd1.coalesce(1).saveAsTextFile("hdfs://hdpmst:9000/data/reviews")
+
+val df = spark.read.option("inferSchema","true").option("header","true").csv("hdfs://hdpmst:9000/data/reviews")
+
+df.printSchema
+root
+ |-- Id: integer (nullable = true)
+ |-- ProductId: string (nullable = true)
+ |-- UserId: string (nullable = true)
+ |-- ProfileName: string (nullable = true)
+ |-- HelpfulnessNumerator: string (nullable = true)
+ |-- HelpfulnessDenominator: string (nullable = true)
+ |-- Score: string (nullable = true)
+ |-- Time: string (nullable = true)
+ |-- Summary: string (nullable = true)
+ |-- Text: string (nullable = true)
+
+df.groupBy('Score).count.show
++-----+------+                                                                  
+|Score| count|
++-----+------+
+| null|     2|
+|    1| 52268|
+|    3| 42640|
+|    5|363120|
+|    4| 80655|
+|    2| 29769|
++-----+------+
+
+df.rdd.getNumPartitions
+res3: Int = 3
+
+spark.conf.set("spark.sql.shuffle.partitions",10)
+
+df.show()
++---+----------+--------------+--------------------+--------------------+----------------------+-----+----------+--------------------+--------------------+
+| Id| ProductId|        UserId|         ProfileName|HelpfulnessNumerator|HelpfulnessDenominator|Score|      Time|             Summary|                Text|
++---+----------+--------------+--------------------+--------------------+----------------------+-----+----------+--------------------+--------------------+
+|  1|B001E4KFG0|A3SGXH7AUHU8GW|          delmartian|                   1|                     1|    5|1303862400|Good Quality Dog ...|I have bought sev...|
+|  2|B00813GRG4|A1D87F6ZCVE5NK|              dll pa|                   0|                     0|    1|1346976000|   Not as Advertised|Product arrived l...|
+|  3|B000LQOCH0| ABXLMWJIXXAIN|Natalia Corres Na...|                   1|                     1|    4|1219017600| Delight says it all|This is a confect...|
+|  4|B000UA0QIQ|A395BORC6FGVXV|                Karl|                   3|                     3|    2|1307923200|      Cough Medicine|If you are lookin...|
+|  5|B006K2ZZ7K|A1UQRSCLF8GW1T|Michael D. Bigham...|                   0|                     0|    5|1350777600|         Great taffy|Great taffy at a ...|
+|  6|B006K2ZZ7K| ADT0SRK1MGOEU|      Twoapennything|                   0|                     0|    4|1342051200|          Nice Taffy|I got a wild hair...|
+|  7|B006K2ZZ7K|A1SP2KVKFXXRU1|   David C. Sullivan|                   0|                     0|    5|1340150400|Great!  Just as g...|This saltwater ta...|
+|  8|B006K2ZZ7K|A3JRGQVEQN31IQ|  Pamela G. Williams|                   0|                     0|    5|1336003200|Wonderful, tasty ...|This taffy is so ...|
+|  9|B000E7L2R4|A1MZYO9TZK0BBI|            R. James|                   1|                     1|    5|1322006400|          Yay Barley|Right now I'm mos...|
+| 10|B00171APVA|A21BT40VZCCYT4|       Carol A. Reed|                   0|                     0|    5|1351209600|    Healthy Dog Food|This is a very he...|
+| 11|B0001PB9FE|A3HDKO7OW0QNK4|        Canadian Fan|                   1|                     1|    5|1107820800|The Best Hot Sauc...|I don't know if i...|
+| 12|B0009XLVG0|A2725IB4YY9JEB|A Poeng SparkyGoHome|                   4|                     4|    5|1282867200|My cats LOVE this...|One of my boys ne...|
+| 13|B0009XLVG0| A327PCT23YH90|                  LT|                   1|                     1|    1|1339545600|My Cats Are Not F...|My cats have been...|
+| 14|B001GVISJM|A18ECVX2RJ7HUE|       willie roadie|                   2|                     2|    4|1288915200|   fresh and greasy!|good flavor! thes...|
+| 15|B001GVISJM|A2MUGFV2TDQ47K|   Lynrie Oh HELL no|                   4|                     5|    5|1268352000|Strawberry Twizzl...|The Strawberry Tw...|
+| 16|B001GVISJM|A1CZX3CP8IKQIJ|        Brian A. Lee|                   4|                     5|    5|1262044800|Lots of twizzlers...|My daughter loves...|
+| 17|B001GVISJM|A3KLWF6WQ5BNYO|      Erica Neathery|                   0|                     0|    2|1348099200|          poor taste|I love eating the...|
+| 18|B001GVISJM| AFKW14U97Z6QO|               Becca|                   0|                     0|    5|1345075200|            Love it!|I am very satisfi...|
+| 19|B001GVISJM|A2A9X58G2GTBLP|             Wolfee1|                   0|                     0|    5|1324598400|  GREAT SWEET CANDY!|Twizzlers, Strawb...|
+| 20|B001GVISJM|A3IV7CL2C13K2U|                Greg|                   0|                     0|    5|1318032000|Home delivered tw...|Candy was deliver...|
++---+----------+--------------+--------------------+--------------------+----------------------+-----+----------+--------------------+--------------------+
+only showing top 20 rows
+
+
+val userdf = df.select("UserId").distinct().withColumn("idxUser",monotonically_increasing_id)
+userdf: org.apache.spark.sql.DataFrame = [UserId: string, idxUser: bigint]
+
+userdf.show
++--------------+-------+                                                        
+|        UserId|idxUser|
++--------------+-------+
+|A2MUGFV2TDQ47K|      0|
+|A1ODOGXEYECQQ8|      1|
+| A42NGYNZ73U63|      2|
+|A1BO2LDOJOHVNV|      3|
+| AH1IMQ5S2GG1E|      4|
+| AXO4PQU0XG3TG|      5|
+|A18GJ9MYYO6GCQ|      6|
+|A2982O0T6KXH1O|      7|
+|A16LYEEID4H88M|      8|
+|A2BJ6ESL1K80W4|      9|
+|  AQ87SH7TQD4N|     10|
+|A346C2868MRMRC|     11|
+|A12JF1M45OIDD2|     12|
+| ATPG1JDODJ7IT|     13|
+|A1K82R24ROO2I7|     14|
+|A124PSAV4UV3BX|     15|
+|A1JICRGJ51CHGE|     16|
+|A349KQHU3JGJ47|     17|
+|A35VI0H5AFHOJ5|     18|
+|A134C9GVEU5TQE|     19|
++--------------+-------+
+only showing top 20 rows
+
+
+userdf.describe().show
++-------+------------------+-------------------+                                
+|summary|            UserId|            idxUser|
++-------+------------------+-------------------+
+|  count|            256059|             256059|
+|   mean|              null|3.87578913447519E10|
+| stddev|              null|2.46257785463394E10|
+|    min|#oc-R103C0QSV1DF5E|                  0|
+|    max|     AZZZOVIBXHGDR|        77309437060|
++-------+------------------+-------------------+
+
+userdf.rdd.getNumPartitions
+res10: Int = 10
+
+val userdf = df.select("UserId").distinct().coalesce(1).withColumn("idxUser",monotonically_increasing_id)
+userdf: org.apache.spark.sql.DataFrame = [UserId: string, idxUser: bigint]
+
+userdf.rdd.getNumPartitions
+res9: Int = 1
+
+userdf.describe().show
++-------+------------------+-----------------+                                  
+|summary|            UserId|          idxUser|
++-------+------------------+-----------------+
+|  count|            256059|           256059|
+|   mean|              null|         128029.0|
+| stddev|              null|73918.01062663957|
+|    min|#oc-R103C0QSV1DF5E|                0|
+|    max|     AZZZOVIBXHGDR|           256058|
++-------+------------------+-----------------+
+
+val proddf = df.select("ProductId").distinct().coalesce(1).withColumn("idxProd",monotonically_increasing_id)
+proddf: org.apache.spark.sql.DataFrame = [ProductId: string, idxProd: bigint]
+
+proddf.describe().show()
++-------+--------------------+-----------------+                                
+|summary|           ProductId|          idxProd|
++-------+--------------------+-----------------+
+|  count|               74258|            74258|
+|   mean| 5.340061504285714E9|          37128.5|
+| stddev|3.4541724934415317E9|21436.58248182298|
+|    min|          0006641040|                0|
+|    max|          B009WVB40S|            74257|
++-------+--------------------+-----------------+
+
+proddf.rdd.getNumPartitions
+res14: Int = 1
+
+userdf.write.saveAsTable("user_tbl")
+                                                                                
+proddf.write.saveAsTable("prod_tbl")
+                                                                                
+spark.sql("show tables").show
++--------+---------+-----------+
+|database|tableName|isTemporary|
++--------+---------+-----------+
+| default| prod_tbl|      false|
+| default| user_tbl|      false|
++--------+---------+-----------+
+
+
+val userdf = spark.read.table("user_tbl")
+userdf: org.apache.spark.sql.DataFrame = [UserId: string, idxUser: bigint]
+
+val proddf = spark.read.table("prod_tbl")
+proddf: org.apache.spark.sql.DataFrame = [ProductId: string, idxProd: bigint]
+
+userdf.rdd.getNumPartitions
+res17: Int = 2
+
+userdf.rdd.toDebugString
+res18: String =
+(2) MapPartitionsRDD[92] at rdd at <console>:26 []
+ |  MapPartitionsRDD[91] at rdd at <console>:26 []
+ |  MapPartitionsRDD[90] at rdd at <console>:26 []
+ |  FileScanRDD[89] at rdd at <console>:26 []
+
+userdf.explain
+== Physical Plan ==
+*(1) FileScan parquet default.user_tbl[UserId#652,idxUser#653L] Batched: true, Format: Parquet, Location: InMemoryFileIndex[hdfs://hdpmst:9000/user/hive/warehouse/user_tbl], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<UserId:string,idxUser:bigint>
+
+proddf.rdd.getNumPartitions
+res21: Int = 1
+
+proddf.rdd.toDebugString
+res22: String =
+(1) MapPartitionsRDD[100] at rdd at <console>:26 []
+ |  MapPartitionsRDD[99] at rdd at <console>:26 []
+ |  MapPartitionsRDD[98] at rdd at <console>:26 []
+ |  FileScanRDD[97] at rdd at <console>:26 []
+
+proddf.explain
+== Physical Plan ==
+*(1) FileScan parquet default.prod_tbl[ProductId#535,idxProd#536L] Batched: true, Format: Parquet, Location: InMemoryFileIndex[hdfs://hdpmst:9000/user/hive/warehouse/prod_tbl], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<ProductId:string,idxProd:bigint>
+
+
+val dfunion = df.join(userdf, "UserId").join(proddf,"ProductId")
+dfunion: org.apache.spark.sql.DataFrame = [ProductId: string, UserId: string ... 10 more fields]
+
+dfunion.printSchema
+root
+ |-- ProductId: string (nullable = true)
+ |-- UserId: string (nullable = true)
+ |-- Id: integer (nullable = true)
+ |-- ProfileName: string (nullable = true)
+ |-- HelpfulnessNumerator: string (nullable = true)
+ |-- HelpfulnessDenominator: string (nullable = true)
+ |-- Score: string (nullable = true)
+ |-- Time: string (nullable = true)
+ |-- Summary: string (nullable = true)
+ |-- Text: string (nullable = true)
+ |-- idxUser: long (nullable = true)
+ |-- idxProd: long (nullable = true)
+ 
+
+import org.apache.spark.sql.types._
+
+val dfals = dfunion.select(col("idxUser").as("user"),col("idxProd").as("item"),col("Score").as("rating").cast(IntegerType)).
+                    where("rating is not null")
+
+dfals.printSchema
+root
+ |-- user: long (nullable = true)
+ |-- item: long (nullable = true)
+ |-- rating: integer (nullable = true)
+ 
+dfals.show
++------+-----+------+                                                           
+|  user| item|rating|
++------+-----+------+
+|111371|52032|     5|
+| 85703|59392|     1|
+|215893|44537|     4|
+|111372|25850|     2|
+| 60138|68683|     5|
+|239777|68683|     4|
+| 54807|68683|     5|
+|220472|68683|     5|
+|220473|36968|     5|
+|239778|29459|     5|
+| 31076|25851|     5|
+| 84976|29460|     5|
+| 60139|29460|     1|
+|179475|14674|     4|
+|   601|14674|     5|
+|239779|14674|     5|
+|234419|14674|     2|
+| 85704|14674|     5|
+|   235|14674|     5|
+| 54182|14674|     5|
++------+-----+------+
+only showing top 20 rows 
+
+
+import org.apache.spark.ml.recommendation.ALS
+
+val als = new ALS().setMaxIter(5).setUserCol("user").setItemCol("item").setRatingCol("rating").setRank(10)
+
+val model = als.fit(dfals)
+
+val dftop10 = dfals.limit(10)
+
+val predictions = model.transform(dftop10)
+
+predictions.show
++------+-----+------+----------+                                                
+|  user| item|rating|prediction|
++------+-----+------+----------+
+|     0|70004|     5|  4.931697|
+|127543|70004|     5|  4.931697|
+|204754|70004|     4| 3.9515376|
+|230326|70004|     5|  4.931697|
+|     1|70004|     5| 4.3117514|
+|101870|70004|     5|  4.931697|
+| 25110|70004|     5|  4.779648|
+|204753|70004|     4| 3.9453578|
+| 76273|70004|     5|  4.931697|
+| 76274|70004|     5|  4.931697|
++------+-----+------+----------+
+
+
+model.write.overwrite.save("hdfs://hdpmst:9000/data/als_model")
+
+----------
+
+import org.apache.spark.ml.recommendation.ALSModel
+
+val model = ALSModel.load("hdfs://hdpmst:9000/data/als_model")
+
+import org.apache.spark.sql.types._
+
+val rdd = Seq((127543,70004),(204754,70004),(230326,70004))
+
+val df = rdd.toDF("user","item")
+
+df.printSchema
+root
+ |-- user: integer (nullable = false)
+ |-- item: integer (nullable = false)
+
+df.show
++------+-----+
+|  user| item|
++------+-----+
+|127543|70004|
+|204754|70004|
+|230326|70004|
++------+-----+
+
+spark.conf.set("spark.sql.shuffle.partitions",10)
+
+model.transform(df).show
++------+-----+----------+                                                       
+|  user| item|prediction|
++------+-----+----------+
+|204754|70004| 3.9515376|
+|230326|70004|  4.931697|
+|127543|70004|  4.931697|
++------+-----+----------+
